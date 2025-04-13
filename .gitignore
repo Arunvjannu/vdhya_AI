@@ -1,0 +1,19 @@
+        # Python virtual environment
+        venv/
+        *.pyc
+        __pycache__/
+
+        # OS-specific files
+        .DS_Store
+        Thumbs.db
+
+        # IDE/Editor files
+        .vscode/
+        .idea/
+
+        # Sensitive files (IMPORTANT!)
+        keyfile.json  # Or whatever your Google credentials file is called
+        *.env
+        .env
+
+        # Add any other files you don't want on GitHub

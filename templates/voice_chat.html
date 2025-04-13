@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vdhya AI - Voice Chat</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0; /* Changed background to a dark blue gradient */
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
+            /* Adding a fallback solid color */
+            background-color: #1e3a8a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Use 100vh */
+            overflow: hidden; /* Prevent scrollbars if container slightly exceeds */
+        }
+        #voice-container {
+            /* Added multiple small radial gradients for stars over the base deep space gradient */
+            background:
+                /* Stars layer 1 (small, dense) */
+                radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 130px 80px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 160px 120px, #ddd, rgba(0,0,0,0)),
+                /* Stars layer 2 (medium, sparse) */
+                radial-gradient(1.5px 1.5px at 70% 20%, #eee, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 20% 60%, #fff, rgba(0,0,0,0)),
+                radial-gradient(2.5px 2.5px at 80% 70%, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 30% 85%, #fff, rgba(0,0,0,0)),
+                /* Stars layer 3 (tiny, dense) */
+                radial-gradient(.5px .5px at 10px 100px, #eee, rgba(0,0,0,0)),
+                radial-gradient(.5px .5px at 150px 180px, #fff, rgba(0,0,0,0)),
+                radial-gradient(.75px .75px at 80px 220px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(.5px .5px at 180px 50px, #fff, rgba(0,0,0,0)),
+                radial-gradient(.75px .75px at 20px 250px, #fff, rgba(0,0,0,0)),
+                radial-gradient(.5px .5px at 100px 280px, #ddd, rgba(0,0,0,0)),
+                /* Stars layer 4 (medium, more spread) */
+                radial-gradient(1px 1px at 15% 15%, #eee, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 85% 40%, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 50% 50%, #ddd, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 40% 90%, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 90% 5%, #eee, rgba(0,0,0,0)),
+                /* Base deep space gradient */
+                radial-gradient(ellipse at center, #1f2937 0%, #111827 70%, #0c0a18 100%);
+            /* Set background size for the base gradient (stars default to their size) */
+            background-size: auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, 100% 100%;
+            background-repeat: repeat; /* Let star patterns repeat */
+
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4); /* Adjusted shadow for dark bg */
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 70vh;
+            justify-content: space-between;
+            border: 1px solid rgba(75, 85, 99, 0.6); /* Darker, subtle border */
+        }
+        h1 {
+            color: #e5e7eb; /* Light grey for heading */
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+        #initialStartButton { /* Style for the initial button */
+            background-color: #007bff; /* Blue */
+            border: none;
+            color: white;
+            padding: 18px 40px; /* Larger padding */
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            margin-top: 50px; /* Push it down a bit */
+        }
+        #initialStartButton:hover { background-color: #0056b3; }
+        #initialStartButton:active { transform: scale(0.98); }
+
+        #main-interface { /* Container for elements shown after start */
+            display: none; /* Initially hidden */
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #avatar-container {
+             margin: 20px 0; /* Space around avatar */
+             width: 150px; /* Container size */
+             height: 150px;
+             border-radius: 50%; /* Make it circular */
+             overflow: hidden; /* Clip image to circle */
+             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+             border: 3px solid #4b5563; /* Darker grey border */
+        }
+
+        #avatar {
+             width: 100%;
+             height: 100%;
+             object-fit: cover; /* Ensure image covers the circle */
+             transition: transform 0.5s ease-in-out; /* Smooth transition for animation */
+        }
+
+        #avatar.speaking {
+            animation: speak-pulse 1s infinite alternate ease-in-out;
+            border-color: #6ee7b7; /* Lighter green for speaking on dark bg */
+        }
+
+        @keyframes speak-pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(110, 231, 183, 0.3);
+            }
+            100% {
+                transform: scale(1.05);
+                box-shadow: 0 0 20px rgba(110, 231, 183, 0.7);
+            }
+        }
+
+
+        #transcript {
+            /* Removed border and background-color */
+            height: 30vh;
+            width: 100%;
+            overflow-y: auto;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            line-height: 1.6;
+            /* Text color will inherit, ensure body or container has light text if needed */
+            box-sizing: border-box;
+        }
+        #transcript p { margin: 5px 0; padding: 8px 12px; border-radius: 15px; display: inline-block; max-width: 85%; }
+        #transcript .user-speech {
+             background-color: rgba(55, 65, 81, 0.7); /* Dark grey-blue semi-transparent */
+             color: #f3f4f6; /* Light grey text */
+             float: right; clear: both; text-align: right; margin-left: auto;
+         }
+        #transcript .bot-speech {
+             background-color: rgba(31, 41, 55, 0.7); /* Darker grey-blue semi-transparent */
+             color: #f3f4f6; /* Light grey text */
+             float: left; clear: both; text-align: left; margin-right: auto;
+         }
+        #transcript .message-container {
+             overflow: hidden;
+             margin-bottom: 10px;
+        }
+
+
+        #recordButton {
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            margin-top: 0;
+        }
+        #recordButton:hover { background-color: #45a049; }
+        #recordButton:active { transform: scale(0.98); }
+        #recordButton.recording { background-color: #f44336; } /* Red when recording */
+        #recordButton.recording:hover { background-color: #da190b; }
+
+        .hidden { display: none; }
+
+        .button-controls { /* Container for record/pause buttons */
+            display: flex;
+            justify-content: center; /* Center buttons horizontally */
+            align-items: center; /* Align vertically */
+            gap: 15px; /* Space between buttons */
+            margin-top: 15px;
+            width: 100%; /* Take full width to center content */
+        }
+
+        #pauseResumeButton {
+            padding: 8px 16px; /* Smaller padding */
+            font-size: 14px; /* Smaller font */
+            border-radius: 20px; /* Adjust radius */
+            background-color: #ff9800; /* Orange */
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        #pauseResumeButton:hover { background-color: #f57c00; }
+        #pauseResumeButton:active { transform: scale(0.98); }
+
+        #pauseResumeButton.resume-mode { /* Style for when it shows "Resume" */
+             background-color: #607d8b; /* Blue Grey */
+        }
+        #pauseResumeButton.resume-mode:hover {
+             background-color: #455a64;
+        }
+    </style>
+</head>
+<body>
+    <div id="voice-container">
+        <h1>vdhya AI</h1>
+
+        <button id="initialStartButton">Start</button>
+
+        <div id="main-interface">
+            <div id="avatar-container">
+                <!-- Replace with your actual avatar image URL -->
+                <img id="avatar" src="/static/images/teacher_avatar_placeholder.png" alt="vdhya AI Avatar">
+            </div>
+
+        <div id="transcript">
+                <p><em>Press Start to begin...</em></p>
+            </div>
+
+            <div class="button-controls">
+                 <button id="recordButton">Start Speaking</button>
+                 <button id="pauseResumeButton">Pause</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const initialStartButton = document.getElementById('initialStartButton');
+        const mainInterface = document.getElementById('main-interface');
+        const recordButton = document.getElementById('recordButton');
+        const transcriptDiv = document.getElementById('transcript');
+        const avatar = document.getElementById('avatar');
+        const pauseResumeButton = document.getElementById('pauseResumeButton');
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let currentAudio = null;
+
+        initialStartButton.addEventListener('click', async () => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Error: Microphone access (getUserMedia) is not supported by your browser. Cannot start.");
+                return;
+            }
+
+            initialStartButton.remove();
+            mainInterface.style.display = 'flex';
+            transcriptDiv.innerHTML = '<p><em>Initializing...</em></p>';
+
+            try {
+                const response = await fetch('/voice_chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'GET_GREETING' })
+                });
+
+                const data = await response.json(); // Expect JSON now
+
+                if (!response.ok) {
+                    // Use message from JSON error response if available
+                    throw new Error(data.message || `Server error: ${response.status}`);
+                }
+
+                if (data.text && data.audio) {
+                    addMessageToTranscript(`vdhya AI: ${data.text}`, 'bot'); // Use actual text
+                    const audioBlob = await base64ToBlob(data.audio, 'audio/mpeg');
+                    playAudio(audioBlob);
+                } else {
+                     throw new Error("Invalid response format from server.");
+                }
+
+            } catch (error) {
+                console.error('Error fetching initial greeting:', error);
+                addMessageToTranscript(`Error: Could not start conversation. ${error.message}`, 'bot');
+            }
+        });
+
+        recordButton.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        async function startRecording() {
+            try {
+                if (currentAudio) {
+                    currentAudio.pause();
+                    avatar.classList.remove('speaking');
+                    if (!currentAudio.paused) {
+                         pauseResumeButton.textContent = 'Resume';
+                         pauseResumeButton.classList.add('resume-mode');
+                    }
+                 }
+
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                console.log("MediaRecorder initialized. MimeType:", mediaRecorder.mimeType);
+
+                let chunkCounter = 0;
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        chunkCounter++;
+                        console.log(`Received chunk ${chunkCounter}, size: ${event.data.size}`);
+                    } else {
+                        console.log("Received empty data chunk.");
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    console.log(`Recording stopped. Total chunks received: ${chunkCounter}`);
+                    sendAudioToServer();
+                };
+                
+                mediaRecorder.onerror = (event) => {
+                    console.error("MediaRecorder error:", event.error);
+                };
+
+                audioChunks = [];
+                mediaRecorder.start(1000);
+                console.log("Recording started.");
+                recordButton.textContent = 'Stop Speaking';
+                recordButton.classList.add('recording');
+                pauseResumeButton.disabled = true;
+
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                addMessageToTranscript('Error: Could not access microphone.', 'user');
+                 recordButton.textContent = 'Start Speaking';
+                 recordButton.classList.remove('recording');
+                 pauseResumeButton.disabled = false;
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                recordButton.textContent = 'Processing...';
+                recordButton.disabled = true;
+                recordButton.classList.remove('recording');
+            }
+        }
+
+        async function sendAudioToServer() {
+             if (audioChunks.length === 0) {
+                console.warn("No audio chunks recorded.");
+                resetRecordButton();
+                return;
+            }
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            console.log(`Final Blob created. Size: ${audioBlob.size}, Type: ${audioBlob.type}`);
+             // Add placeholder for user audio, actual text comes in response
+             addMessageToTranscript('You: [Processing your audio...]', 'user');
+
+            try {
+                const response = await fetch('/voice_chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': mediaRecorder.mimeType || 'audio/webm' },
+                    body: audioBlob
+                });
+
+                const data = await response.json(); // Expect JSON
+
+                if (!response.ok) {
+                    // Display error message from JSON payload
+                    addMessageToTranscript(`Error: ${data.message || 'Unknown server error'}`, 'bot');
+                    console.error('Server error response:', data);
+                    throw new Error(data.message || `Server error: ${response.status}`);
+                }
+
+                // Update transcript with actual user text and bot text
+                if (data.user_text) {
+                    // Replace the placeholder user message
+                    replaceLastUserMessage(`You: ${data.user_text}`);
+                }
+                if (data.bot_text) {
+                    addMessageToTranscript(`vdhya AI: ${data.bot_text}`, 'bot');
+                }
+
+                // Play audio if available
+                if (data.audio) {
+                    const botAudioBlob = await base64ToBlob(data.audio, 'audio/mpeg');
+                    playAudio(botAudioBlob);
+                } else if (data.error && data.error === 'TTS Error') {
+                    // Handle TTS error gracefully (text is already shown)
+                    console.warn("TTS synthesis failed on server.");
+                } else {
+                    console.warn("No audio received in response.");
+                }
+
+            } catch (error) {
+                console.error('Error sending/processing audio:', error);
+                // Avoid adding duplicate error if already added from JSON
+                if (!transcriptDiv.textContent.includes(error.message)) {
+                    addMessageToTranscript(`Error: ${error.message}`, 'bot');
+                }
+            } finally {
+               resetRecordButton();
+            }
+        }
+
+         function resetRecordButton() {
+             recordButton.textContent = 'Start Speaking';
+             recordButton.disabled = false;
+             recordButton.classList.remove('recording');
+             pauseResumeButton.disabled = false;
+             console.log('Resetting record button, Pause enabled:', !pauseResumeButton.disabled);
+        }
+
+        pauseResumeButton.addEventListener('click', () => {
+            console.log('Pause/Resume button clicked.');
+            if (!currentAudio) {
+                 console.log('No currentAudio to pause/resume.');
+                 return;
+            }
+
+            if (currentAudio.paused) {
+                console.log('Audio is paused. Resuming...');
+                currentAudio.play();
+                avatar.classList.add('speaking');
+                console.log('Added speaking class.');
+                pauseResumeButton.textContent = 'Pause';
+                pauseResumeButton.classList.remove('resume-mode');
+            } else {
+                console.log('Audio is playing. Pausing...');
+                currentAudio.pause();
+                avatar.classList.remove('speaking');
+                console.log('Removed speaking class.');
+                pauseResumeButton.textContent = 'Resume';
+                pauseResumeButton.classList.add('resume-mode');
+            }
+        });
+
+        function playAudio(audioBlob) {
+             console.log('playAudio function called.');
+             if (currentAudio) {
+                console.log('Stopping previous audio.');
+                currentAudio.pause();
+                URL.revokeObjectURL(currentAudio.src);
+             }
+
+            const audioUrl = URL.createObjectURL(audioBlob);
+            currentAudio = new Audio(audioUrl);
+            avatar.classList.add('speaking');
+            console.log('Added speaking class (new audio).');
+            pauseResumeButton.textContent = 'Pause';
+            pauseResumeButton.classList.remove('resume-mode');
+            pauseResumeButton.disabled = false;
+            console.log('Pause button enabled:', !pauseResumeButton.disabled);
+
+            currentAudio.play();
+            console.log('Playing new audio.');
+
+            currentAudio.onended = () => {
+                console.log('Audio ended.');
+                avatar.classList.remove('speaking');
+                console.log('Removed speaking class (ended).');
+                URL.revokeObjectURL(audioUrl);
+                currentAudio = null;
+                pauseResumeButton.textContent = 'Pause';
+                pauseResumeButton.classList.remove('resume-mode');
+                pauseResumeButton.disabled = true;
+                console.log('Pause button disabled (ended).');
+            };
+             currentAudio.onerror = (e) => {
+                 console.error("Error playing audio:", e);
+                 avatar.classList.remove('speaking');
+                 console.log('Removed speaking class (error).');
+                 addMessageToTranscript("[Error playing audio response]", "bot");
+                 URL.revokeObjectURL(audioUrl);
+                 currentAudio = null;
+                 pauseResumeButton.textContent = 'Pause';
+                 pauseResumeButton.classList.remove('resume-mode');
+                 pauseResumeButton.disabled = true;
+                 console.log('Pause button disabled (error).');
+             };
+        }
+
+        function addMessageToTranscript(text, sender) {
+            const initialMessage = transcriptDiv.querySelector('p > em');
+            if (initialMessage) {
+                initialMessage.parentElement.remove();
+            }
+
+            const messageContainer = document.createElement('div');
+            messageContainer.classList.add('message-container');
+
+            const messageElement = document.createElement('p');
+            messageElement.textContent = (sender === 'bot') ? text.replace(/^vdhya AI:/i, 'vdhya AI:') : text;
+            messageElement.classList.add(sender === 'user' ? 'user-speech' : 'bot-speech');
+
+            messageContainer.appendChild(messageElement);
+            transcriptDiv.appendChild(messageContainer);
+
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        }
+
+        // Helper function to replace the last user message (for showing transcription)
+        function replaceLastUserMessage(newText) {
+            const userMessages = transcriptDiv.querySelectorAll('.user-speech');
+            if (userMessages.length > 0) {
+                const lastUserMessage = userMessages[userMessages.length - 1];
+                lastUserMessage.textContent = newText;
+            }
+        }
+
+        // Helper function to convert base64 string to Blob
+        async function base64ToBlob(base64, contentType = '', sliceSize = 512) {
+            return fetch(`data:${contentType};base64,${base64}`).then(res => res.blob());
+        }
+
+    </script>
+</body>
+</html> 
